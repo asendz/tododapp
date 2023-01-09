@@ -1,0 +1,16 @@
+.MainSection {
+    padding: 10px;
+    display: flex;
+}
+
+.Content {
+    width: 70%;
+    border: 5px solid black;
+    margin: 10px;
+}
+
+.Sidebar {
+    flex-grow: 1;
+    border: 5px solid black;
+    margin: 10px;
+}
