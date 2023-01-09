@@ -1,90 +1,103 @@
-import './MainSection.css';
-import { useState, useEffect } from 'react';
+import "./MainSection.css";
+import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import ABI from "./contractABI.json";
-import Card from "./Card.js"
+import Card from "./Card.js";
 
 function MainSection() {
+	const [currentAccount, setCurrentAccount] = useState(null);
+	const [chainName, setChainName] = useState(null);
+	const [task, setTask] = useState([]);
 
-    const [currentAccount, setCurrentAccount] = useState(null);
-    const [chainName, setChainName] = useState(null);
-    const [task, setTask] = useState([]);
+	const [input, setInput] = useState(null);
 
-    const [input, setInput] = useState(null);
+	const change = async () => {
+		const provider = new ethers.providers.Web3Provider(window.ethereum);
+		const signer = provider.getSigner();
+		const contract = new ethers.Contract(
+			"0x7067516a3F9d4D7915094684Fe71a0A02e6CD107",
+			ABI,
+			signer
+		);
 
+		//const changeAge = await contract.changeAge(inputAge);
+		//const changeName = await contract.changename(inputName);
 
-    const change = async () => {
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
-        const signer = provider.getSigner();
-        const contract = new ethers.Contract("0x7067516a3F9d4D7915094684Fe71a0A02e6CD107", ABI, signer);
+		const createTask = await contract.createTask(input);
+	};
 
-        //const changeAge = await contract.changeAge(inputAge);
-        //const changeName = await contract.changename(inputName);
+	const getData = async () => {
+		const provider = new ethers.providers.Web3Provider(window.ethereum);
+		const signer = provider.getSigner();
+		const contract = new ethers.Contract(
+			"0x7067516a3F9d4D7915094684Fe71a0A02e6CD107",
+			ABI,
+			signer
+		);
 
-        const createTask = await contract.createTask(input);
+		const total = await contract.totalTasks();
+		console.log(total);
 
-    }
+		setTask([]);
+		for (var i = 0; i < total; i++) {
+			const currentTask = await contract.taskList(i);
+			setTask((prevTask) => [...prevTask, currentTask]);
+		}
+		console.log(task);
+	};
 
-    const getData = async () => {
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
-        const signer = provider.getSigner();
-        const contract = new ethers.Contract("0x7067516a3F9d4D7915094684Fe71a0A02e6CD107", ABI, signer);
+	const getWalletAddress = async () => {
+		if (window.ethereum && window.ethereum.isMetaMask) {
+			const provider = new ethers.providers.Web3Provider(window.ethereum);
+			await provider.send("eth_requestAccounts");
+			const currentAddress = await provider.getSigner().getAddress();
+			console.log(currentAddress);
+			setCurrentAccount(currentAddress);
 
-        const total = await contract.totalTasks();
-        console.log(total);
+			const chain = await provider.getNetwork();
+			setChainName(chain.name);
+		}
 
-        setTask([]);
-        for (var i = 0; i < total; i++) {
-            const currentTask = await contract.taskList(i);
-            setTask(prevTask => [...prevTask, currentTask]);
-        }
-        console.log(task);
-    }
+		const chainChanged = () => {
+			window.location.reload();
+		};
+		window.ethereum.on("chainChanged", chainChanged);
+		window.ethereum.on("accountsChanged", getWalletAddress);
+	};
 
-    const getWalletAddress = async () => {
-        if (window.ethereum && window.ethereum.isMetaMask) {
-            const provider = new ethers.providers.Web3Provider(window.ethereum);
-            await provider.send("eth_requestAccounts");
-            const currentAddress = await provider.getSigner().getAddress();
-            console.log(currentAddress);
-            setCurrentAccount(currentAddress);
+	useEffect(() => {
+		getWalletAddress();
+		getData();
+	}, []);
 
-            const chain = await provider.getNetwork();
-            setChainName(chain.name);
-        }
+	return (
+		<div class="MainSection">
+			<div class="Content">
+				<p>Current Account: {currentAccount}</p>
+				<p>Chain Name: {chainName}</p>
 
-        const chainChanged = () => {
-            window.location.reload();
-        }
-        window.ethereum.on('chainChanged', chainChanged);
-        window.ethereum.on('accountsChanged', getWalletAddress);
-    }
+				<p>
+					Input:{" "}
+					<input
+						value={input}
+						onInput={(e) => setInput(e.target.value)}
+					/>
+				</p>
+				<button onClick={change}>Add task</button>
 
-    useEffect(() => {
-        getWalletAddress();
-        getData();
-    }, []);
-
-    return (
-        <div class="MainSection">
-            <div class="Content">
-
-                <p>Current Account: {currentAccount}</p>
-                <p>Chain Name: {chainName}</p>
-
-                <p>Input: <input value={input} onInput={e => setInput(e.target.value)} /></p>
-                <button onClick={change}>Add task</button>
-
-                {task.map((item) => (
-                    <Card Name={item.taskName} id={item.id} done={item.completedYet} />
-                ))}
-
-            </div>
-            <div class="Sidebar">
-                <p>This is sidebar</p>
-            </div>
-        </div>
-    );
+				{task.map((item) => (
+					<Card
+						Name={item.taskName}
+						id={item.id}
+						done={item.completedYet}
+					/>
+				))}
+			</div>
+			<div class="Sidebar">
+				<p>This is sidebar</p>
+			</div>
+		</div>
+	);
 }
 
 export default MainSection;
